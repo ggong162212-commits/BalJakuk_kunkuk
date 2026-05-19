@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="발자국 카드뉴스">
+<meta name="theme-color" content="#88a96a">
+<title>발자국 카드뉴스 메이커</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700;900&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#f5edd9;
+    --cream-card:#fdfaf0;
+    --green:#88a96a;
+    --green-deep:#6f8d54;
+    --green-soft:#c5d9ab;
+    --green-pale:#e3eed3;
+    --ink:#5a6b48;
+    --ink-soft:#8a9676;
+    --paw:#5b4a3a;
+    --shadow:rgba(110,141,84,.22);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:'Noto Sans KR',sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    overscroll-behavior:none;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* dotted texture backdrop */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:radial-gradient(var(--green-soft) 1px,transparent 1px);
+    background-size:22px 22px;opacity:.35;
+  }
+
+  .app{
+    position:relative;z-index:1;
+    max-width:480px;margin:0 auto;min-height:100%;
+    display:flex;flex-direction:column;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+
+  /* ---------- HEADER ---------- */
+  header{
+    padding:18px 20px 12px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .logo-paw{width:34px;height:34px;flex:none;}
+  .brand h1{
+    font-size:19px;font-weight:900;color:var(--green-deep);letter-spacing:-.5px;
+  }
+  .brand p{font-size:11px;color:var(--ink-soft);margin-top:1px;}
+
+  /* ---------- TEMPLATE TABS ---------- */
+  .tabs{
+    display:flex;gap:7px;overflow-x:auto;padding:4px 20px 14px;
+    scrollbar-width:none;
+  }
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{
+    flex:none;border:none;cursor:pointer;
+    background:var(--cream-card);color:var(--ink-soft);
+    font-family:inherit;font-size:12.5px;font-weight:700;
+    padding:9px 14px;border-radius:14px;
+    border:1.5px solid transparent;
+    transition:.18s;
+  }
+  .tab.active{
+    background:var(--green);color:#fff;
+    box-shadow:0 4px 12px var(--shadow);
+  }
+
+  /* ---------- PREVIEW CANVAS ---------- */
+  .stage{
+    padding:0 20px 8px;
+  }
+  .canvas-wrap{
+    position:relative;width:100%;aspect-ratio:1/1;
+    border-radius:20px;overflow:hidden;
+    box-shadow:0 14px 34px var(--shadow);
+  }
+  /* the actual exported card lives here, rendered at 1080 then scaled */
+  #card{
+    position:absolute;top:0;left:0;
+    width:1080px;height:1080px;
+    transform-origin:top left;
+  }
+
+  /* ===== CARD BASE STYLES (these get exported) ===== */
+  .card-bg{
+    width:100%;height:100%;position:relative;
+    background:var(--cream);
+    font-family:'Noto Sans KR',sans-serif;
+    overflow:hidden;
+  }
+  .deco-dot{position:absolute;border-radius:50%;}
+
+  /* --- COVER TEMPLATE --- */
+  .t-cover .inner{
+    position:absolute;inset:54px;
+    background:var(--cream-card);
+    border:3px solid var(--green-soft);
+    border-radius:38px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:60px;
+  }
+  .t-cover .big-paw{width:150px;height:150px;margin-bottom:8px;}
+  .t-cover .wordmark{
+    font-family:'Gaegu',cursive;font-weight:700;
+    font-size:96px;color:var(--green-deep);line-height:1;letter-spacing:2px;
+  }
+  .t-cover .pill{
+    margin-top:34px;background:var(--green-pale);
+    color:var(--green-deep);font-weight:700;font-size:30px;
+    padding:14px 34px;border-radius:40px;
+  }
+  .t-cover .title{
+    font-weight:900;font-size:104px;color:var(--ink);
+    margin-top:40px;letter-spacing:-2px;line-height:1.05;
+  }
+  .t-cover .subtitle{
+    font-family:'Gowun Dodum',serif;font-style:italic;
+    font-size:42px;color:var(--ink-soft);margin-top:26px;
+  }
+  .t-cover .dots3{margin-top:34px;display:flex;gap:14px;}
+  .t-cover .dots3 span{width:18px;height:18px;border-radius:50%;background:var(--green-soft);}
+  .t-cover .datebox{
+    margin-top:42px;border:3px dashed var(--green-soft);
+    border-radius:24px;padding:22px 50px;
+    font-weight:800;font-size:46px;color:var(--green-deep);
+    display:flex;align-items:center;gap:16px;
+  }
+  .t-cover .hashtags{
+    position:absolute;bottom:18px;left:0;right:0;text-align:center;
+    color:var(--ink-soft);font-size:30px;font-weight:500;
+  }
+
+  /* --- ACTIVITY TEMPLATE (2 photos + quote) --- */
+  .t-activity .top-bar,.t-photos .top-bar{
+    position:absolute;top:48px;left:60px;right:60px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .t-activity .sec-title,.t-photos .sec-title,.t-closing .sec-title{
+    display:flex;align-items:center;gap:18px;
+    font-weight:900;font-size:58px;color:var(--green-deep);
+  }
+  .sec-emoji{font-size:54px;}
+  .mini-mark{display:flex;align-items:center;gap:10px;}
+  .mini-mark svg{width:54px;height:54px;}
+  .mini-mark span{font-family:'Gaegu',cursive;font-weight:700;font-size:40px;color:var(--green-deep);}
+  .dotline{
+    position:absolute;top:132px;left:60px;right:60px;height:8px;
+    background-image:radial-gradient(var(--green-soft) 3px,transparent 3px);
+    background-size:26px 8px;
+  }
+  .t-activity .photo-row{
+    position:absolute;top:188px;left:60px;right:60px;
+    display:flex;gap:26px;
+  }
+  .photo-slot{
+    flex:1;aspect-ratio:1/1;border-radius:26px;overflow:hidden;
+    background:var(--green-pale);
+    border:5px solid #fff;
+    box-shadow:0 8px 20px var(--shadow);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .photo-slot img{width:100%;height:100%;object-fit:cover;display:block;}
+  .photo-slot .ph-empty{color:var(--ink-soft);font-size:30px;font-weight:700;text-align:center;padding:20px;}
+  .t-activity .quote-box{
+    position:absolute;left:60px;right:60px;bottom:60px;top:680px;
+    background:var(--cream-card);border-radius:32px;
+    padding:64px 60px 50px;
+    border:2px solid var(--green-pale);
+  }
+  .quote-mark{
+    font-family:'Playfair Display',serif;font-style:italic;
+    font-size:120px;color:var(--green-soft);line-height:0;
+    position:absolute;top:64px;left:54px;
+  }
+  .t-activity .q-title{
+    font-weight:900;font-size:52px;color:var(--ink);
+    margin-left:78px;margin-bottom:30px;
+  }
+  .t-activity .q-body{
+    font-size:34px;line-height:1.6;color:var(--ink-soft);font-weight:500;
+    white-space:pre-wrap;word-break:keep-all;
+  }
+
+  /* --- PHOTO GRID TEMPLATE (4 photos) --- */
+  .t-photos .grid4{
+    position:absolute;top:188px;left:60px;right:60px;bottom:60px;
+    display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;
+    gap:30px;
+  }
+  .t-photos .grid4 .photo-slot{aspect-ratio:auto;}
+
+  /* --- CLOSING TEMPLATE (1 big photo) --- */
+  .t-closing .top-bar{
+    position:absolute;top:48px;left:60px;right:60px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .t-closing .big-slot{
+    position:absolute;top:188px;left:60px;right:60px;bottom:150px;
+    border-radius:30px;overflow:hidden;background:var(--green-pale);
+    border:6px solid #fff;box-shadow:0 10px 26px var(--shadow);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .t-closing .big-slot img{width:100%;height:100%;object-fit:cover;}
+  .t-closing .big-slot .ph-empty{color:var(--ink-soft);font-size:34px;font-weight:700;}
+  .t-closing .caption{
+    position:absolute;bottom:54px;left:0;right:0;text-align:center;
+    font-weight:800;font-size:54px;color:var(--green-deep);
+  }
+
+  /* --- THANKYOU TEMPLATE --- */
+  .t-thanks .card-bg{background:var(--green);}
+  .t-thanks .circle{
+    position:absolute;top:60px;left:60px;right:60px;bottom:60px;
+    background:var(--cream-card);border-radius:50%;
+    border:4px dashed var(--green-soft);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:90px;
+  }
+  .t-thanks .big-paw{width:130px;height:130px;}
+  .t-thanks .wordmark{
+    font-family:'Gaegu',cursive;font-weight:700;
+    font-size:84px;color:var(--green-deep);line-height:1;margin-top:4px;
+  }
+  .t-thanks .ty{
+    font-family:'Playfair Display',serif;font-style:italic;font-weight:700;
+    font-size:116px;color:var(--green-deep);margin-top:30px;
+  }
+  .t-thanks .ty-sub{
+    font-size:38px;color:var(--ink-soft);font-weight:700;margin-top:8px;
+  }
+  .t-thanks .dots3{margin-top:30px;display:flex;gap:14px;}
+  .t-thanks .dots3 span{width:18px;height:18px;border-radius:50%;background:var(--green-soft);}
+  .t-thanks .ty-next{
+    font-family:'Gowun Dodum',serif;font-style:italic;
+    font-size:36px;color:var(--ink-soft);margin-top:30px;
+  }
+  .t-thanks .handle{
+    margin-top:26px;font-weight:800;font-size:38px;color:var(--green-deep);
+  }
+
+  /* ---------- EDITOR PANEL ---------- */
+  .editor{
+    background:var(--cream-card);
+    border-radius:26px 26px 0 0;
+    margin-top:14px;
+    padding:22px 20px calc(26px + env(safe-area-inset-bottom));
+    box-shadow:0 -6px 24px rgba(110,141,84,.12);
+    flex:1;
+  }
+  .editor h2{
+    font-size:14px;color:var(--green-deep);font-weight:900;
+    margin-bottom:14px;display:flex;align-items:center;gap:7px;
+  }
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block;font-size:12.5px;font-weight:700;color:var(--ink);
+    margin-bottom:6px;
+  }
+  .field input[type=text],
+  .field input[type=date],
+  .field textarea{
+    width:100%;font-family:inherit;font-size:15px;color:var(--ink);
+    background:var(--cream);
+    border:1.5px solid var(--green-pale);
+    border-radius:13px;padding:12px 14px;
+    transition:.15s;
+  }
+  .field input:focus,.field textarea:focus{
+    outline:none;border-color:var(--green);
+    background:#fff;
+  }
+  .field textarea{resize:vertical;min-height:88px;line-height:1.55;}
+  .field .hint{font-size:11px;color:var(--ink-soft);margin-top:4px;}
+
+  /* photo upload buttons */
+  .photo-grid-edit{
+    display:grid;gap:10px;
+  }
+  .photo-grid-edit.cols2{grid-template-columns:1fr 1fr;}
+  .photo-grid-edit.cols1{grid-template-columns:1fr;}
+  .photo-btn{
+    position:relative;aspect-ratio:1/1;
+    border:2px dashed var(--green-soft);
+    border-radius:14px;background:var(--cream);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:6px;cursor:pointer;overflow:hidden;
+    color:var(--ink-soft);font-size:12px;font-weight:700;
+  }
+  .photo-btn img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .photo-btn .cam{font-size:26px;}
+  .photo-btn .reswap{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(90,107,72,.45);color:#fff;font-size:12px;font-weight:800;
+    opacity:0;transition:.15s;
+  }
+  .photo-btn:active .reswap{opacity:1;}
+  .photo-btn .clear-x{
+    position:absolute;top:5px;right:5px;width:24px;height:24px;
+    background:rgba(90,107,72,.85);color:#fff;border:none;border-radius:50%;
+    font-size:13px;font-weight:900;cursor:pointer;line-height:1;
+    display:flex;align-items:center;justify-content:center;z-index:2;
+  }
+  .photo-btn input[type=file]{display:none;}
+
+  /* ---------- ACTION BUTTONS ---------- */
+  .actions{
+    display:flex;gap:10px;margin-top:8px;
+  }
+  .btn{
+    flex:1;border:none;cursor:pointer;font-family:inherit;
+    font-size:14.5px;font-weight:800;
+    padding:15px 10px;border-radius:16px;
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    transition:.15s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--green);color:#fff;box-shadow:0 6px 16px var(--shadow);}
+  .btn-ghost{background:var(--green-pale);color:var(--green-deep);}
+
+  /* ---------- TOAST ---------- */
+  .toast{
+    position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);
+    background:var(--paw);color:#fff;font-size:13px;font-weight:700;
+    padding:13px 22px;border-radius:30px;
+    opacity:0;pointer-events:none;transition:.28s;z-index:99;
+    box-shadow:0 8px 24px rgba(0,0,0,.25);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ---------- HELP SHEET ---------- */
+  .help-link{
+    text-align:center;font-size:11.5px;color:var(--ink-soft);
+    margin-top:16px;text-decoration:underline;cursor:pointer;
+  }
+  .sheet-mask{
+    position:fixed;inset:0;background:rgba(50,58,40,.5);
+    z-index:50;opacity:0;pointer-events:none;transition:.2s;
+  }
+  .sheet-mask.show{opacity:1;pointer-events:auto;}
+  .sheet{
+    position:fixed;left:0;right:0;bottom:0;z-index:51;
+    background:var(--cream-card);border-radius:24px 24px 0 0;
+    padding:24px 24px calc(28px + env(safe-area-inset-bottom));
+    max-width:480px;margin:0 auto;
+    transform:translateY(110%);transition:.28s cubic-bezier(.3,.8,.3,1);
+    max-height:80vh;overflow-y:auto;
+  }
+  .sheet.show{transform:translateY(0);}
+  .sheet h3{font-size:16px;color:var(--green-deep);margin-bottom:14px;font-weight:900;}
+  .sheet ol{padding-left:20px;}
+  .sheet li{font-size:13.5px;line-height:1.7;color:var(--ink);margin-bottom:9px;}
+  .sheet .close-sheet{
+    width:100%;margin-top:16px;background:var(--green);color:#fff;
+    border:none;border-radius:14px;padding:14px;font-weight:800;font-size:14px;
+    font-family:inherit;cursor:pointer;
+  }
+  .sheet .grip{
+    width:42px;height:5px;background:var(--green-soft);border-radius:3px;
+    margin:0 auto 16px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <svg class="logo-paw" viewBox="0 0 100 100" aria-hidden="true">
+      <ellipse cx="28" cy="30" rx="13" ry="17" fill="#88a96a"/>
+      <ellipse cx="50" cy="22" rx="13" ry="18" fill="#88a96a"/>
+      <ellipse cx="72" cy="30" rx="13" ry="17" fill="#88a96a"/>
+      <path d="M50 48 C30 48 18 64 18 78 C18 92 32 95 50 95 C68 95 82 92 82 78 C82 64 70 48 50 48 Z" fill="#88a96a"/>
+      <path d="M50 62 c-4 -8 -16 -6 -16 3 c0 7 11 13 16 18 c5 -5 16 -11 16 -18 c0 -9 -12 -11 -16 -3 Z" fill="#fdfaf0"/>
+    </svg>
+    <div class="brand">
+      <h1>발자국 카드뉴스 메이커</h1>
+      <p>봉사활동 후기를 인스타로 바로 ✨</p>
+    </div>
+  </header>
+
+  <!-- TEMPLATE TABS -->
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-tpl="cover">표지</button>
+    <button class="tab" data-tpl="activity">활동 소개</button>
+    <button class="tab" data-tpl="photos">사진 모음</button>
+    <button class="tab" data-tpl="closing">마무리</button>
+    <button class="tab" data-tpl="thanks">Thank You</button>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="stage">
+    <div class="canvas-wrap">
+      <div id="card"><!-- card rendered by JS --></div>
+    </div>
+  </div>
+
+  <!-- EDITOR -->
+  <div class="editor">
+    <h2>✏️ <span id="editorTitle">표지 만들기</span></h2>
+    <div id="editorFields"><!-- fields rendered by JS --></div>
+
+    <div class="actions">
+      <button class="btn btn-ghost" id="resetBtn">↺ 초기화</button>
+      <button class="btn btn-primary" id="saveBtn">📷 사진으로 저장</button>
+    </div>
+    <div class="help-link" id="helpLink">📱 아이폰에 앱처럼 설치하는 방법</div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- HELP SHEET -->
+<div class="sheet-mask" id="sheetMask"></div>
+<div class="sheet" id="helpSheet">
+  <div class="grip"></div>
+  <h3>📱 아이폰 홈 화면에 추가하기</h3>
+  <ol>
+    <li>이 페이지를 <b>Safari</b>에서 엽니다.</li>
+    <li>하단 가운데의 <b>공유 버튼</b>(네모에 화살표 ↑)을 누릅니다.</li>
+    <li>메뉴에서 <b>'홈 화면에 추가'</b>를 선택합니다.</li>
+    <li>이름을 확인하고 오른쪽 위 <b>'추가'</b>를 누르면 끝!</li>
+    <li>이제 홈 화면 아이콘으로 앱처럼 바로 실행할 수 있어요.</li>
+  </ol>
+  <h3 style="margin-top:18px;">💚 카드 만들고 인스타 올리기</h3>
+  <ol>
+    <li>상단 탭에서 만들 카드 종류를 고릅니다.</li>
+    <li>날짜·텍스트를 입력하고 사진 칸을 눌러 사진을 넣습니다.</li>
+    <li><b>'사진으로 저장'</b>을 누르면 1080×1080 정사각형 이미지가 저장됩니다.</li>
+    <li>저장된 사진을 인스타그램에서 그대로 업로드하세요!</li>
+  </ol>
+  <button class="close-sheet" id="closeSheet">알겠어요!</button>
+</div>
+
+<!-- html2canvas for image export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+/* ============================================================
+   발자국 카드뉴스 메이커
+   - 5종 템플릿, 모바일 입력, 1080x1080 PNG 내보내기
+   - 데이터는 메모리(state)에만 유지 (브라우저 저장소 미사용)
+   ============================================================ */
+
+const PAW_SVG = `<svg viewBox="0 0 100 100"><ellipse cx="28" cy="30" rx="13" ry="17" fill="#6f8d54"/><ellipse cx="50" cy="22" rx="13" ry="18" fill="#6f8d54"/><ellipse cx="72" cy="30" rx="13" ry="17" fill="#6f8d54"/><path d="M50 48 C30 48 18 64 18 78 C18 92 32 95 50 95 C68 95 82 92 82 78 C82 64 70 48 50 48 Z" fill="#6f8d54"/><path d="M50 62 c-4 -8 -16 -6 -16 3 c0 7 11 13 16 18 c5 -5 16 -11 16 -18 c0 -9 -12 -11 -16 -3 Z" fill="#fdfaf0"/></svg>`;
+
+const MINI_PAW = `<svg viewBox="0 0 100 100"><ellipse cx="28" cy="30" rx="13" ry="17" fill="#6f8d54"/><ellipse cx="50" cy="22" rx="13" ry="18" fill="#6f8d54"/><ellipse cx="72" cy="30" rx="13" ry="17" fill="#6f8d54"/><path d="M50 48 C30 48 18 64 18 78 C18 92 32 95 50 95 C68 95 82 92 82 78 C82 64 70 48 50 48 Z" fill="#6f8d54"/><path d="M50 62 c-4 -8 -16 -6 -16 3 c0 7 11 13 16 18 c5 -5 16 -11 16 -18 c0 -9 -12 -11 -16 -3 Z" fill="#fdfaf0"/></svg>`;
+
+/* ---------- default content (from the uploaded PDF) ---------- */
+function freshState(){
+  return {
+    cover: {
+      pill:'봉사동아리 발자국',
+      title:'봉사활동 후기',
+      subtitle:'후기 끓여왔어요~',
+      date:'2026-04-12',
+      hashtags:'#발자국 #봉사활동 #동아리'
+    },
+    activity: {
+      emoji:'📸',
+      sectionTitle:'활동 소개',
+      qTitle:'어떤 봉사활동을 했냐면…',
+      qBody:'묘사와 견사 파트를 나누어 꼼꼼하게 청소를 진행했습니다.\n창고 쪽에 있는 대형견 친구들의 공간을 깨끗하게 치워준 뒤, 사료까지 배식하며 든든하게 하루 일과를 마쳤습니다!',
+      photos:[null,null]
+    },
+    photos: {
+      emoji:'📸',
+      sectionTitle:'사진 모음',
+      photos:[null,null,null,null]
+    },
+    closing: {
+      emoji:'🐾',
+      sectionTitle:'오봉완!',
+      caption:'고생 많으셨어요 ☺',
+      photos:[null]
+    },
+    thanks: {
+      ty:'Thank You!',
+      tySub:'끝까지 봐주셔서 감사합니다 🐾',
+      tyNext:'다음 활동에서 또 만나요!',
+      handle:'@ balja_guk'
+    }
+  };
+}
+let state = freshState();
+let current = 'cover';
+
+/* ---------- helpers ---------- */
+function fmtDate(iso){
+  if(!iso) return '____. __. __.';
+  const [y,m,d] = iso.split('-');
+  return `${y}. ${m}. ${d}.`;
+}
+function esc(s){
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ============================================================
+   CARD RENDERERS  -> return innerHTML for #card
+   ============================================================ */
+function renderCard(){
+  const card = document.getElementById('card');
+  card.className = 't-' + current;
+  card.innerHTML = TEMPLATES[current].render();
+}
+
+const TEMPLATES = {
+
+  /* ---------- COVER ---------- */
+  cover:{
+    label:'표지', editorTitle:'표지 만들기',
+    render(){
+      const c = state.cover;
+      return `
+      <div class="card-bg">
+        <div class="deco-dot" style="width:70px;height:70px;background:var(--green-soft);top:60px;right:80px;"></div>
+        <div class="deco-dot" style="width:34px;height:34px;background:var(--green-pale);top:150px;right:60px;"></div>
+        <div class="deco-dot" style="width:30px;height:30px;background:var(--green-soft);top:120px;right:160px;"></div>
+        <div class="deco-dot" style="width:60px;height:60px;background:var(--green-soft);bottom:70px;left:80px;"></div>
+        <div class="deco-dot" style="width:30px;height:30px;background:var(--green-pale);bottom:60px;left:160px;"></div>
+        <div class="inner">
+          <div class="big-paw">${PAW_SVG}</div>
+          <div class="wordmark">발자국</div>
+          <div class="pill">🐾 ${esc(c.pill)}</div>
+          <div class="title">${esc(c.title)}</div>
+          <div class="subtitle">${esc(c.subtitle)}</div>
+          <div class="dots3"><span></span><span></span><span></span></div>
+          <div class="datebox">📅 ${fmtDate(c.date)}</div>
+        </div>
+        <div class="hashtags">${esc(c.hashtags)}</div>
+      </div>`;
+    },
+    fields(){
+      const c = state.cover;
+      return `
+      ${textField('cover','pill','상단 배지 문구',c.pill)}
+      ${textField('cover','title','큰 제목',c.title)}
+      ${textField('cover','subtitle','부제목',c.subtitle)}
+      <div class="field">
+        <label>날짜</label>
+        <input type="date" data-sec="cover" data-key="date" value="${c.date}">
+      </div>
+      ${textField('cover','hashtags','해시태그',c.hashtags)}`;
+    }
+  },
+
+  /* ---------- ACTIVITY (2 photos + quote) ---------- */
+  activity:{
+    label:'활동 소개', editorTitle:'활동 소개 카드',
+    render(){
+      const a = state.activity;
+      return `
+      <div class="card-bg">
+        <div class="top-bar">
+          <div class="sec-title"><span class="sec-emoji">${esc(a.emoji)}</span>${esc(a.sectionTitle)}</div>
+          <div class="mini-mark">${MINI_PAW}<span>발자국</span></div>
+        </div>
+        <div class="dotline"></div>
+        <div class="photo-row">
+          ${photoSlot(a.photos[0])}
+          ${photoSlot(a.photos[1])}
+        </div>
+        <div class="quote-box">
+          <div class="quote-mark">&ldquo;</div>
+          <div class="q-title">${esc(a.qTitle)}</div>
+          <div class="q-body">${esc(a.qBody)}</div>
+        </div>
+      </div>`;
+    },
+    fields(){
+      const a = state.activity;
+      return `
+      ${textField('activity','emoji','섹션 이모지',a.emoji)}
+      ${textField('activity','sectionTitle','섹션 제목',a.sectionTitle)}
+      <div class="field">
+        <label>사진 (2장)</label>
+        <div class="photo-grid-edit cols2">
+          ${photoBtn('activity',0)}
+          ${photoBtn('activity',1)}
+        </div>
+      </div>
+      ${textField('activity','qTitle','후기 제목',a.qTitle)}
+      ${areaField('activity','qBody','후기 내용',a.qBody)}`;
+    }
+  },
+
+  /* ---------- PHOTOS (4 photo grid) ---------- */
+  photos:{
+    label:'사진 모음', editorTitle:'사진 모음 카드',
+    render(){
+      const p = state.photos;
+      return `
+      <div class="card-bg">
+        <div class="top-bar">
+          <div class="sec-title"><span class="sec-emoji">${esc(p.emoji)}</span>${esc(p.sectionTitle)}</div>
+          <div class="mini-mark">${MINI_PAW}<span>발자국</span></div>
+        </div>
+        <div class="dotline"></div>
+        <div class="grid4">
+          ${photoSlot(p.photos[0])}
+          ${photoSlot(p.photos[1])}
+          ${photoSlot(p.photos[2])}
+          ${photoSlot(p.photos[3])}
+        </div>
+      </div>`;
+    },
+    fields(){
+      const p = state.photos;
+      return `
+      ${textField('photos','emoji','섹션 이모지',p.emoji)}
+      ${textField('photos','sectionTitle','섹션 제목',p.sectionTitle)}
+      <div class="field">
+        <label>사진 (4장)</label>
+        <div class="photo-grid-edit cols2">
+          ${photoBtn('photos',0)}
+          ${photoBtn('photos',1)}
+          ${photoBtn('photos',2)}
+          ${photoBtn('photos',3)}
+        </div>
+      </div>`;
+    }
+  },
+
+  /* ---------- CLOSING (1 big photo) ---------- */
+  closing:{
+    label:'마무리', editorTitle:'마무리 카드',
+    render(){
+      const c = state.closing;
+      return `
+      <div class="card-bg">
+        <div class="top-bar">
+          <div class="sec-title"><span class="sec-emoji">${esc(c.emoji)}</span>${esc(c.sectionTitle)}</div>
+          <div class="mini-mark">${MINI_PAW}<span>발자국</span></div>
+        </div>
+        <div class="dotline"></div>
+        <div class="big-slot">
+          ${c.photos[0]
+            ? `<img src="${c.photos[0]}" alt="">`
+            : `<div class="ph-empty">단체 사진을 넣어주세요</div>`}
+        </div>
+        <div class="caption">${esc(c.caption)}</div>
+      </div>`;
+    },
+    fields(){
+      const c = state.closing;
+      return `
+      ${textField('closing','emoji','섹션 이모지',c.emoji)}
+      ${textField('closing','sectionTitle','섹션 제목',c.sectionTitle)}
+      <div class="field">
+        <label>대표 사진 (1장)</label>
+        <div class="photo-grid-edit cols1">
+          ${photoBtn('closing',0)}
+        </div>
+      </div>
+      ${textField('closing','caption','하단 문구',c.caption)}`;
+    }
+  },
+
+  /* ---------- THANK YOU ---------- */
+  thanks:{
+    label:'Thank You', editorTitle:'Thank You 카드',
+    render(){
+      const t = state.thanks;
+      return `
+      <div class="card-bg">
+        <div class="deco-dot" style="width:46px;height:46px;background:var(--green-pale);top:90px;left:90px;"></div>
+        <div class="deco-dot" style="width:46px;height:46px;background:var(--green-pale);top:90px;right:90px;"></div>
+        <div class="deco-dot" style="width:46px;height:46px;background:var(--green-pale);bottom:90px;left:90px;"></div>
+        <div class="deco-dot" style="width:46px;height:46px;background:var(--green-pale);bottom:90px;right:90px;"></div>
+        <div class="circle">
+          <div class="big-paw">${PAW_SVG}</div>
+          <div class="wordmark">발자국</div>
+          <div class="ty">${esc(t.ty)}</div>
+          <div class="ty-sub">${esc(t.tySub)}</div>
+          <div class="dots3"><span></span><span></span><span></span></div>
+          <div class="ty-next">${esc(t.tyNext)}</div>
+          <div class="handle">${esc(t.handle)}</div>
+        </div>
+      </div>`;
+    },
+    fields(){
+      const t = state.thanks;
+      return `
+      ${textField('thanks','ty','큰 제목',t.ty)}
+      ${textField('thanks','tySub','감사 문구',t.tySub)}
+      ${textField('thanks','tyNext','다음 안내 문구',t.tyNext)}
+      ${textField('thanks','handle','인스타 계정',t.handle)}`;
+    }
+  }
+};
+
+/* ---------- field builders ---------- */
+function textField(sec,key,label,val){
+  return `
+  <div class="field">
+    <label>${label}</label>
+    <input type="text" data-sec="${sec}" data-key="${key}" value="${esc(val)}" placeholder="${label} 입력">
+  </div>`;
+}
+function areaField(sec,key,label,val){
+  return `
+  <div class="field">
+    <label>${label}</label>
+    <textarea data-sec="${sec}" data-key="${key}" placeholder="${label} 입력">${esc(val)}</textarea>
+    <div class="hint">줄바꿈도 그대로 적용돼요.</div>
+  </div>`;
+}
+function photoSlot(src){
+  return `<div class="photo-slot">${
+    src ? `<img src="${src}" alt="">` : `<div class="ph-empty">사진</div>`
+  }</div>`;
+}
+function photoBtn(sec,idx){
+  const src = state[sec].photos[idx];
+  return `
+  <label class="photo-btn">
+    ${src
+      ? `<img src="${src}" alt=""><div class="reswap">바꾸기</div>
+         <button type="button" class="clear-x" data-clear="${sec}:${idx}">×</button>`
+      : `<span class="cam">📷</span><span>사진 ${idx+1}</span>`}
+    <input type="file" accept="image/*" data-photo="${sec}:${idx}">
+  </label>`;
+}
+
+/* ============================================================
+   EDITOR PANEL
+   ============================================================ */
+function renderEditor(){
+  document.getElementById('editorTitle').textContent = TEMPLATES[current].editorTitle;
+  document.getElementById('editorFields').innerHTML = TEMPLATES[current].fields();
+  bindEditorEvents();
+}
+
+function bindEditorEvents(){
+  // text / textarea / date inputs
+  document.querySelectorAll('#editorFields [data-sec]').forEach(el=>{
+    el.addEventListener('input', e=>{
+      const sec = e.target.dataset.sec;
+      const key = e.target.dataset.key;
+      state[sec][key] = e.target.value;
+      renderCard();
+    });
+  });
+  // photo file inputs
+  document.querySelectorAll('#editorFields [data-photo]').forEach(inp=>{
+    inp.addEventListener('change', e=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const [sec,idx] = e.target.dataset.photo.split(':');
+      const reader = new FileReader();
+      reader.onload = ev=>{
+        loadAndCompress(ev.target.result, dataUrl=>{
+          state[sec].photos[+idx] = dataUrl;
+          renderCard();
+          renderEditor();
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+  // photo clear buttons
+  document.querySelectorAll('#editorFields [data-clear]').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      e.preventDefault();
+      const [sec,idx] = e.target.dataset.clear.split(':');
+      state[sec].photos[+idx] = null;
+      renderCard();
+      renderEditor();
+    });
+  });
+}
+
+/* compress uploaded photo to keep things fast (max 1200px) */
+function loadAndCompress(dataUrl, cb){
+  const img = new Image();
+  img.onload = ()=>{
+    const max = 1200;
+    let {width:w,height:h} = img;
+    if(w>max || h>max){
+      const r = Math.min(max/w, max/h);
+      w = Math.round(w*r); h = Math.round(h*r);
+    }
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    cv.getContext('2d').drawImage(img,0,0,w,h);
+    cb(cv.toDataURL('image/jpeg',0.88));
+  };
+  img.onerror = ()=>cb(dataUrl);
+  img.src = dataUrl;
+}
+
+/* ============================================================
+   PREVIEW SCALING  (card is 1080px, scale to fit wrapper)
+   ============================================================ */
+function fitCard(){
+  const wrap = document.querySelector('.canvas-wrap');
+  const scale = wrap.clientWidth / 1080;
+  document.getElementById('card').style.transform = `scale(${scale})`;
+}
+window.addEventListener('resize', fitCard);
+
+/* ============================================================
+   TABS
+   ============================================================ */
+document.getElementById('tabs').addEventListener('click', e=>{
+  const btn = e.target.closest('.tab');
+  if(!btn) return;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  current = btn.dataset.tpl;
+  renderCard();
+  renderEditor();
+  fitCard();
+});
+
+/* ============================================================
+   SAVE AS IMAGE  (1080x1080 PNG)
+   ============================================================ */
+document.getElementById('saveBtn').addEventListener('click', async ()=>{
+  const card = document.getElementById('card');
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.textContent = '⏳ 저장 중...';
+  saveBtn.disabled = true;
+
+  // temporarily un-scale for full-res capture
+  const prevTransform = card.style.transform;
+  card.style.transform = 'scale(1)';
+
+  try{
+    const canvas = await html2canvas(card,{
+      width:1080, height:1080,
+      scale:1, useCORS:true, backgroundColor:null,
+      logging:false
+    });
+    card.style.transform = prevTransform;
+
+    canvas.toBlob(blob=>{
+      const fname = `발자국_${TEMPLATES[current].label}_${Date.now()}.png`;
+      // try native share (best for iPhone -> straight to Instagram)
+      const file = new File([blob], fname, {type:'image/png'});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        navigator.share({files:[file], title:'발자국 카드뉴스'})
+          .then(()=>toast('공유 시트가 열렸어요!'))
+          .catch(()=>downloadBlob(blob,fname));
+      }else{
+        downloadBlob(blob,fname);
+      }
+    },'image/png');
+  }catch(err){
+    card.style.transform = prevTransform;
+    toast('저장 실패 — 다시 시도해 주세요');
+    console.error(err);
+  }finally{
+    saveBtn.textContent = '📷 사진으로 저장';
+    saveBtn.disabled = false;
+  }
+});
+
+function downloadBlob(blob,fname){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast('사진 앨범에 저장됐어요! 📷');
+}
+
+/* ============================================================
+   RESET
+   ============================================================ */
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if(!confirm('현재 카드의 입력 내용을 초기화할까요?')) return;
+  const fresh = freshState();
+  state[current] = fresh[current];
+  renderCard();
+  renderEditor();
+  toast('초기화했어요');
+});
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+/* ============================================================
+   HELP SHEET
+   ============================================================ */
+const sheet = document.getElementById('helpSheet');
+const mask = document.getElementById('sheetMask');
+function openSheet(){ sheet.classList.add('show'); mask.classList.add('show'); }
+function closeSheet(){ sheet.classList.remove('show'); mask.classList.remove('show'); }
+document.getElementById('helpLink').addEventListener('click', openSheet);
+document.getElementById('closeSheet').addEventListener('click', closeSheet);
+mask.addEventListener('click', closeSheet);
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init(){
+  renderCard();
+  renderEditor();
+  fitCard();
+  // re-fit after fonts load (font metrics change layout)
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(()=>{ renderCard(); fitCard(); });
+  }
+}
+init();
+</script>
+</body>
+</html>
